@@ -8,9 +8,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-debug:
-    name: Build Debug APK
+  build:
     runs-on: ubuntu-latest
+
+    # Exponemos los secrets como env (si no existen, quedan vacíos)
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -22,11 +28,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Cache y wrapper de Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # Instalar SDK de Android (api/build-tools ajustables si querés)
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -35,6 +39,7 @@ jobs:
           arch: x86_64
           build-tools: "34.0.0"
 
+      # ---------- Build DEBUG ----------
       - name: Build Debug
         run: ./gradlew clean :app:assembleDebug
 
@@ -44,47 +49,23 @@ jobs:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
-  # Job opcional para firmar y generar Release si cargás los secretos
-  build-release:
-    name: Build Release APK (signed)
-    needs: build-debug
-    runs-on: ubuntu-latest
-    if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          target: default
-          arch: x86_64
-          build-tools: "34.0.0"
-
-      # Restaurar keystore desde secreto (Base64)
+      # ---------- (Opcional) Build RELEASE firmado ----------
+      # Solo corre si el secreto del keystore existe
       - name: Prepare keystore
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > signing.jks
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > signing.jks
           echo "STORE_FILE=$(pwd)/signing.jks" >> $GITHUB_ENV
-          echo "STORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> $GITHUB_ENV
+          echo "KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
 
       - name: Build Release
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
         run: ./gradlew :app:assembleRelease
 
       - name: Upload Release APK
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
