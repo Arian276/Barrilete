@@ -1,10 +1,45 @@
-// Archivo build.gradle.kts del proyecto raíz
+// Archivo: app/build.gradle.kts
 
 plugins {
-    id("com.android.application") version "8.4.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
-tasks.register("clean", Delete::class) {
-    delete(layout.buildDirectory)
-}
+android {
+    namespace = "com.bc.tvappvlc"   // ⚡️ajustalo según tu packageName
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.bc.tvappvlc"  // ⚡️ajustalo igual que tu packageName
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions
