@@ -25,8 +25,16 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    // 👇 Importante: todo a Java/Kotlin 17
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
+    buildFeatures { compose = true }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
@@ -34,6 +42,11 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+}
+
+// 👇 Asegura la toolchain 17 para Kotlin
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -46,7 +59,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
-    // Necesario para que exista el tema XML Theme.Material3.*
+    // Necesario si usas un tema XML basado en Material (Theme.Material3.*)
     implementation("com.google.android.material:material:1.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
